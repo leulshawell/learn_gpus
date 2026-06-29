@@ -1,0 +1,17 @@
+[package]
+name = "ocl_rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+
+#[dependencies]
+ocl = "0.19.7"
+
+[dependencies]
+minifb = "0.28.0"
+ocl = "0.19.7"
+plotters = "0.3.7"
+
