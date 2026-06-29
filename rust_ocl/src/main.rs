@@ -5,11 +5,12 @@ use std::fs;
 
 
 
-const  DIM: usize = 1024;
+
+//number of threads to be launched
+const  DIM: usize = 512;
+
+//num of threads per group
 const LOCAL_WORK_SIZE: usize  = 16; 
-
-
-
 
 
 
@@ -61,22 +62,22 @@ fn trivial()->ocl::Result<()>{
 
     
 
-    let kernel_fill = proque.kernel_builder("fill")
-        .global_work_size(DIM)
-        .local_work_size(LOCAL_WORK_SIZE)
-        .build()?;
+    // let kernel_fill = proque.kernel_builder("fill")
+    //     .global_work_size(DIM)
+    //     .local_work_size(LOCAL_WORK_SIZE)
+    //     .build()?;
         
     
-    let fill_a = kernel_fill.set_arg(&a, 10.0);
+    // let fill_a = kernel_fill (&a, 10.0);
         
 
-    let fill_b = kernel_fill.set_arg(&b, 10.0);
+    // let fill_b = kernel_fill.set_arg(&b, 10.0);
         
     
-    unsafe { 
-        fill_a.enq()?;
-        fill_b.enq()?;
-    }
+    // unsafe { 
+    //     fill_a.enq()?;
+    //     fill_b.enq()?;
+    // }
 
 
     let kernel = proque.kernel_builder("add")
