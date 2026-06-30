@@ -8,9 +8,15 @@ __kernel void fill(__global float* a, float val) {
 
 __kernel void add(global float* a, global float* b, global float* c) {
             
-    int global_id =  get_global_id(0);
+    int gl_id_x  =  get_global_id(0);
 
-    c[global_id] = a[global_id] + b[global_id];
+    int gl_id_y  =  get_global_id(1);
+
+    int width    =  get_global_size(0);
+
+    int buff_idx =  gl_id_x * width + gl_id_y;
+
+    c[buff_idx] = a[buff_idx] + b[buff_idx];
 
 }
 
