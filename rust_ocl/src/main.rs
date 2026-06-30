@@ -1,5 +1,4 @@
 use ocl::{Buffer, MemFlags, OclPrm, ProQue};
-use std::time::Instant;
 use std::fs;
 
 
@@ -84,8 +83,8 @@ fn trivial()->ocl::Result<()>{
         .arg(&a)
         .arg(&b)
         .arg(&c)
-        .global_work_size(DIM)
-        .local_work_size(LOCAL_WORK_SIZE)
+        .global_work_size((DIM, 1))
+        .local_work_size((LOCAL_WORK_SIZE, 1))
         .build()?;
 
     
