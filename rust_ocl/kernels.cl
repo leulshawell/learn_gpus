@@ -18,14 +18,21 @@ __kernel void add(__global float* a, __global float* b, __global float* c) {
 
 //this assuumes that you launch workers of the size as your result matrice
 __kernel void matmul(__global float* a,  __global float* b, __global float* c, int common_dim){             
-    int row_idx =  get_global_id(0);
+
+    int row_idx  =  get_global_id(0);
     int col_idx =  get_global_id(1);
+
     int row_size =  get_global_size(0);
+    int col_size =  get_global_size(1);
 
-    int res_idx = idx(row_idx, row_size, col_idx);
+    int res_idx = idx(row_idx, col_size, col_idx);
 
-    for (int i = 0; i < common_dim; i++)
-        c[res_idx] += a[idx(row_idx, common_dim, i)] * b[idx(i, row_size, col_idx)];
+    int sum = 0; 
+    for (int i = 0;   i < common_dim; i++){
+        sum =  sum + a[idx(row_idx, common_dim, i)] * b[idx(i, col_size, col_idx)];
+    }
+
+    c[res_idx] = sum;
 
 }
 
