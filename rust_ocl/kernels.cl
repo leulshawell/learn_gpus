@@ -36,6 +36,14 @@ __kernel void matmul(__global float* a,  __global float* b, __global float* c, i
 
 }
 
+
+
+
+//kerne for convolution
+__kernel void conv1d(){
+    
+}
+
 __kernel void sub(__global float* buffer, float scalar) {
     buffer[get_global_id(0)] -= scalar;
 }
