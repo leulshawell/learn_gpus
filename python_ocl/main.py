@@ -3,8 +3,9 @@ from pyopencl import _cl as cl
 import numpy as np
 from math import prod
 
-from typing import Tuple
+from typing import Tuple, List
 from dataclasses import dataclass
+
 
 
 
@@ -31,15 +32,23 @@ context = cl.Context()
 q = cl.CommandQueue(context)
 
 
+#read kernels soure code 
+with open("kernels.cl") as f:
+    kernel_src = f.read()
+
+
 
 class Ops:
-    with open("kernels.cl") as f:
-       kernels = f.read()
-    _progs  = cl._Program(context, kernels).build(options_bytes=b"")
+    _progs  = cl._Program(context, kernel_src).build(options_bytes=b"")
 
     matmul = cl.Kernel(_progs, "matmul")
     add = cl.Kernel(_progs, "add")
     sub = cl.Kernel(_progs, "sub")
+
+    @staticmethod
+    def set_args(op: cl.Kernel, args: List[any]):
+        for i, arg in enumerate(args): op.set_arg(i, arg)
+
 
 
 
@@ -102,11 +111,7 @@ class Matrice(Premitive):
     def matmul(self, other: "Matrice") -> "Matrice":
         _buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
         res, _ = cl.enqueue_map_buffer(q, _buff, flags=cl.map_flags.WRITE, offset=0, shape=(self.shape[0], other.shape[1]), dtype=np.float32)
-    
-        Ops.matmul.set_arg(0, self.buff)
-        Ops.matmul.set_arg(1, other.buff)
-        Ops.matmul.set_arg(2, _buff)
-        Ops.matmul.set_arg(3, np.int32(self.shape[1]))
+        Ops.set_args(Ops.matmul, [self.buff, other.buff, _buff, np.int32(self.shape[1])])
 
         cl.enqueue_nd_range_kernel(q, Ops.matmul, global_work_size=(self.shape[0], other.shape[0]), local_work_size=(1, 1))
         q.finish()
@@ -115,9 +120,7 @@ class Matrice(Premitive):
     
     def add(self, other: "Matrice")->"Matrice":
         buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        Ops.add.set_arg(0, self.buff)
-        Ops.add.set_arg(1, other.buff)
-        Ops.add.set_arg(2, buff)
+        Ops.set_args(Ops.add, [self.buff, other.buff, buff])
 
         cl.enqueue_nd_range_kernel(q, Ops.add, global_work_size=self.shape, local_work_size=(1, 1))
         q.finish()
@@ -129,9 +132,8 @@ class Matrice(Premitive):
     def sub(self, other) -> "Matrice":
         buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
         # res, _ = cl.enqueue_map_buffer(q, buff, flags=cl.map_flags.WRITE, offset=0, shape=self.shape, dtype=np.float32)
-        Ops.sub.set_arg(0, self.buff)
-        Ops.sub.set_arg(1, other.buff)
-        Ops.sub.set_arg(2, buff)
+        Ops.set_args(Ops.sub, [self.buff, other.buff, buff])
+
 
         cl.enqueue_nd_range_kernel(q, Ops.sub, global_work_size=self.shape, local_work_size=(1, 1))
         q.finish()
@@ -143,13 +145,16 @@ class Matrice(Premitive):
 a = Matrice.rand_int(1, 5, (4, 4))
 b = Matrice.rand_int(1, 5, (4, 4))
 
-c = a + b
+c = a @ b
 
-print(a.np)
-print(b.np)
-print(c.np)
+d = a + b
 
-print((a.np + b.np) == c.np)
+
+print('============================================Tests=============================================')
+print("add", "   Passed" if ((a.np + b.np) == (a + b).np).all() else "Failed")
+print("sub", "   Passed" if ((a.np - b.np) == (a - b).np).all() else "Failed")
+print("matmul", "Passed" if ((a.np @ b.np) == (a @ b).np).all() else "Failed")
+
 
 
 

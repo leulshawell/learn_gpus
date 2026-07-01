@@ -46,7 +46,7 @@ __kernel void sub(__global float* a, __global float* b, __global float* c) {
 
     int buff_idx =  idx(gl_id_x, width, gl_id_y);
 
-    c[buff_idx] = 0;
+    c[buff_idx] = a[buff_idx] - b[buff_idx];
 
 }
 
