@@ -23,9 +23,9 @@ default_device = devices[0]
 
 
 
-A_ROWS, A_COLS = 40, 40
+A_ROWS, A_COLS = 4, 2
 
-B_ROWS, B_COLS = 40, 40
+B_ROWS, B_COLS = 2, 4
 
 
 LOCAL_X, LOCAL_Y,  = 1, 1
@@ -49,6 +49,9 @@ b_buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR
 
 #Create a program (basicaly kernels store with the execution context)
 prog = cl._Program(context, kernels).build(options_bytes=b"")
+
+bin = prog.get_info(cl.program_info.BINARIES)[0]
+
 
 
 add_kernel = cl.Kernel(prog, "add") #get the add kernel from the program
@@ -105,8 +108,8 @@ matmul_kernel.set_arg(3, np.int32(A_COLS))
 
 
 #queue the kernel execution
-# cl.enqueue_nd_range_kernel(q, add_kernel, global_work_size=(A_ROWS, A_COLS), local_work_size=(LOCAL_X, 1))
-cl.enqueue_nd_range_kernel(q, matmul_kernel, global_work_size=(A_ROWS, B_COLS), local_work_size=(LOCAL_X, LOCAL_Y))
+cl.enqueue_nd_range_kernel(q, add_kernel, global_work_size=(A_ROWS, A_COLS), local_work_size=(LOCAL_X, 1))
+cl.enqueue_nd_range_kernel(q, matmul_kernel, global_work_size=(A_ROWS, B_COLS), local_work_size=(1,1))
 
 
 q.finish()
@@ -116,5 +119,6 @@ print(a)
 print(b)
 print("===========ADD=======================")
 print(add_result)
+
 print("===========MATMUL========================")
 print(matmul_result)
