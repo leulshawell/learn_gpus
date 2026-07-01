@@ -20,9 +20,9 @@ default_device = devices[0]
 
 
 
-A_ROWS, A_COLS = 500, 40
+A_ROWS, A_COLS = 5, 4
 
-B_ROWS, B_COLS = 40, 2
+B_ROWS, B_COLS = 4, 4
 
 
 
@@ -44,9 +44,6 @@ b_buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR
 
 #Create a program (basicaly kernels store with the execution context)
 prog = cl._Program(context, kernels).build(options_bytes=b"")
-
-bin = prog.get_info(cl.program_info.BINARIES)[0]
-
 
 
 add_kernel = cl.Kernel(prog, "add") #get the add kernel from the program
@@ -113,3 +110,4 @@ print(b)
 
 print("===========MATMUL========================")
 print(matmul_result)
+print((a @ b) == matmul_result)
