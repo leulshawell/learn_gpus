@@ -84,6 +84,9 @@ class Premitive:
         n, _ = cl.enqueue_map_buffer(q, self.buff, flags=cl.map_flags.WRITE, offset=0, shape=self.shape, dtype=np.float32)
         return n
 
+    def __hash__(self):
+        return id(self)
+
 
 class Matrice(Premitive):
     def __init__(self, buff: cl.Buffer, dtype: Dtype, shape: Tuple[int]):
@@ -110,7 +113,6 @@ class Matrice(Premitive):
 
     def matmul(self, other: "Matrice") -> "Matrice":
         _buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        res, _ = cl.enqueue_map_buffer(q, _buff, flags=cl.map_flags.WRITE, offset=0, shape=(self.shape[0], other.shape[1]), dtype=np.float32)
         Ops.set_args(Ops.matmul, [self.buff, other.buff, _buff, np.int32(self.shape[1])])
 
         cl.enqueue_nd_range_kernel(q, Ops.matmul, global_work_size=(self.shape[0], other.shape[0]), local_work_size=(1, 1))
@@ -131,7 +133,6 @@ class Matrice(Premitive):
     
     def sub(self, other) -> "Matrice":
         buff = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        # res, _ = cl.enqueue_map_buffer(q, buff, flags=cl.map_flags.WRITE, offset=0, shape=self.shape, dtype=np.float32)
         Ops.set_args(Ops.sub, [self.buff, other.buff, buff])
 
 
@@ -142,20 +143,15 @@ class Matrice(Premitive):
 
 
 
-a = Matrice.rand_int(1, 5, (4, 4))
-b = Matrice.rand_int(1, 5, (4, 4))
+
+a = Matrice.rand_int(1, 5, (300, 300))
+b = Matrice.rand_int(1, 5, (300, 300))
 
 c = a @ b
 
 d = a + b
 
-
 print('============================================Tests=============================================')
 print("add", "   Passed" if ((a.np + b.np) == (a + b).np).all() else "Failed")
 print("sub", "   Passed" if ((a.np - b.np) == (a - b).np).all() else "Failed")
 print("matmul", "Passed" if ((a.np @ b.np) == (a @ b).np).all() else "Failed")
-
-
-
-
-
