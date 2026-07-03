@@ -16,6 +16,30 @@ __kernel void add(__global float* a, __global float* b, __global float* c) {
 
 
 
+__kernel void sub(__global float* a, __global float* b, __global float* c) {
+    int gl_id_x  =  get_global_id(0);
+    int gl_id_y  =  get_global_id(1);
+    int width    =  get_global_size(0);
+
+    int buff_idx =  idx(gl_id_x, width, gl_id_y);
+
+    c[buff_idx] = a[buff_idx] - b[buff_idx];
+
+}
+
+
+__kernel void mul(__global float* a, __global float* b, __global float* c) {
+    int gl_id_x  =  get_global_id(0);
+    int gl_id_y  =  get_global_id(1);
+    int width    =  get_global_size(0);
+
+    int buff_idx =  idx(gl_id_x, width, gl_id_y);
+
+    c[buff_idx] = a[buff_idx] * b[buff_idx];
+
+}
+
+
 //this assuumes that you launch workers of the size as your result matrice
 __kernel void matmul(__global float* a,  __global float* b, __global float* c, int common_dim){             
 
@@ -35,18 +59,3 @@ __kernel void matmul(__global float* a,  __global float* b, __global float* c, i
     c[res_idx] = sum;
 
 }
-
-
-
-
-__kernel void sub(__global float* a, __global float* b, __global float* c) {
-    int gl_id_x  =  get_global_id(0);
-    int gl_id_y  =  get_global_id(1);
-    int width    =  get_global_size(0);
-
-    int buff_idx =  idx(gl_id_x, width, gl_id_y);
-
-    c[buff_idx] = a[buff_idx] - b[buff_idx];
-
-}
-
