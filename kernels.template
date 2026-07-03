@@ -1,43 +1,17 @@
 #define idx(row_idx, row_size,  col_idx)     row_idx * row_size + col_idx
 
 
-//this assumes worker size = total size of contiguous matrice
-__kernel void add(__global <dtype>* a, __global <dtype>* b, __global <dtype>* c) {
-            
-    int gl_id_x  =  get_global_id(0);
-    int gl_id_y  =  get_global_id(1);
-    int width    =  get_global_size(0);
-
-    int buff_idx =  idx(gl_id_x, width, gl_id_y);
-    
-    c[buff_idx] = a[buff_idx] + b[buff_idx];
-
-}
-
-
-
-__kernel void sub(__global <dtype>* a, __global <dtype>* b, __global <dtype>* c) {
+__kernel void elementwise(__global <dtype>* a, __global <dtype>* b, __global <dtype>* c) {
     int gl_id_x  =  get_global_id(0);
     int gl_id_y  =  get_global_id(1);
     int width    =  get_global_size(0);
 
     int buff_idx =  idx(gl_id_x, width, gl_id_y);
 
-    c[buff_idx] = a[buff_idx] - b[buff_idx];
+    c[buff_idx] = a[buff_idx] <operator> b[buff_idx];
 
 }
 
-
-__kernel void mul(__global <dtype>* a, __global <dtype>* b, __global <dtype>* c) {
-    int gl_id_x  =  get_global_id(0);
-    int gl_id_y  =  get_global_id(1);
-    int width    =  get_global_size(0);
-
-    int buff_idx =  idx(gl_id_x, width, gl_id_y);
-
-    c[buff_idx] = a[buff_idx] * b[buff_idx];
-
-}
 
 
 //this assumes that you launch workers of the size as your result matrice
