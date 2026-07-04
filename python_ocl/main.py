@@ -45,6 +45,12 @@ class Dtype():
     np: np.dtype
     cl: str
 
+class dtypes:
+    float32 = Dtype("float32", 4, np.float32, "float")
+    int32 = Dtype("int32", 4, np.int32, "int")
+    int8 = Dtype("int8", 1, np.int8, "char")
+
+
 
 class Ops(IntEnum): 
     ADD = auto(0)
@@ -64,6 +70,7 @@ class CLRenderer:
 
     def render(op: int, dtype: Dtype):
          return CLRenderer.names[op], prog_template.replace("<dtype>", dtype.cl).replace("<operator>", CLRenderer.operators[op])
+         
         
 
 
@@ -93,11 +100,6 @@ class Program:
         for i, arg in enumerate(args): op.set_arg(i, arg)
 
 
-@dataclass
-class dtypes:
-    float32 = Dtype("float32", 4, np.float32, "float")
-    int32 = Dtype("int32", 4, np.int32, "int")
-    int8 = Dtype("int8", 1, np.int8, "char")
 
 
 
@@ -122,6 +124,7 @@ class Premitive:
     def np(self):
         n, _ = cl.enqueue_map_buffer(q, self.buff, flags=cl.map_flags.WRITE, offset=self.offset, shape=self.shape, dtype=self.dtype.np)
         return n
+
 
 
 
@@ -152,49 +155,32 @@ class Matrice(Premitive):
         buf[:] = np.random.rand(*shape, shape).astype(np.float32)
         return Matrice(_buf, dtypes.float32, shape)
 
+    
+    def alu(self, other: "Matrice", op: Ops,  dtype: Dtype, shape: Tuple[int], *args,  res_buff: Optional[cl.Buffer]=None):
+        buff = res_buff if res_buff else cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
+        kernel = Program.get_kernel_with_args(op, dtype, [self.buff, other.buff, buff, *args])
+
+        cl.enqueue_nd_range_kernel(q, kernel, global_work_size=shape, local_work_size=(1, 1))
+        q.finish()
+        return Matrice(buff, self.dtype, shape)
 
 
-    def matmul(self, other: "Matrice", res_buff: Optional[cl.Buffer]=None) -> "Matrice":
+    def matmul(self, other: "Matrice") -> "Matrice":
         assert self.shape[1] == other.shape[0], "Matmul op requires t1.cols == t2.rows"
-        _buff = res_buff if res_buff else cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        kernel = Program.get_kernel_with_args(Ops.MATMUL, self.dtype, [self.buff, other.buff, _buff, np.int32(self.shape[1])])
-
-        cl.enqueue_nd_range_kernel(q, kernel, global_work_size=(self.shape[0], other.shape[0]), local_work_size=(1, 1))
-        q.finish()
-
-        return Matrice(_buff, self.dtype, (self.shape[0], other.shape[0]))
+        return self.alu(other, Ops.MATMUL, self.dtype, (self.shape[1], other.shape[1]), np.int32(self.shape[1]))
     
-    def add(self, other: "Matrice", res_buff: Optional[cl.Buffer]=None)->"Matrice":
+    def add(self, other: "Matrice")->"Matrice":
         assert self.shape == other.shape, "Add op requires tensor of same dimension"
-        buff = res_buff if res_buff else cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        kernel = Program.get_kernel_with_args(Ops.ADD, self.dtype, [self.buff, other.buff, buff])
-
-        cl.enqueue_nd_range_kernel(q, kernel, global_work_size=self.shape, local_work_size=(1, 1))
-        q.finish()
-
-        return Matrice(buff, self.dtype, self.shape)
+        return self.alu(other, Ops.ADD, self.dtype, (self.shape[1], other.shape[1]))
+        
     
-    
-    
-    def sub(self, other: "Matrice", res_buff: Optional[cl.Buffer]=None) -> "Matrice":
+    def sub(self, other: "Matrice") -> "Matrice":
         assert self.shape == other.shape, "Sub op requires tensor of same dimension"
-        buff = res_buff if res_buff else cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        kernel = Program.get_kernel_with_args(Ops.SUB, self.dtype, [self.buff, other.buff, buff])
-
-        cl.enqueue_nd_range_kernel(q, kernel, global_work_size=self.shape, local_work_size=(1, 1))
-        q.finish()
-
-        return Matrice(buff, self.dtype, self.shape)
+        return self.alu(other, Ops.SUB, self.dtype, (self.shape[1], other.shape[1]))
     
-    def mul(self, other: "Matrice", res_buff: Optional[cl.Buffer]=None) -> "Matrice":
+    def mul(self, other: "Matrice") -> "Matrice":
         assert self.shape == other.shape, "mul op requires tensor of same dimension"
-        buff = res_buff if res_buff else cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR, size=self.size)
-        kernel = Program.get_kernel_with_args(Ops.MUL, self.dtype, [self.buff, other.buff, buff])
-
-        cl.enqueue_nd_range_kernel(q, kernel, global_work_size=self.shape, local_work_size=(1, 1))
-        q.finish()
-
-        return Matrice(buff, self.dtype, self.shape)
+        return self.alu(other, Ops.MUL, self.dtype, (self.shape[1], other.shape[1]))
     
     def conv(self, kernel: "Matrice"):
         #                                                                       shape         offset                                stride
@@ -238,7 +224,6 @@ class BlockedMatrice:
 a = Matrice.rand_int(1, 5, (4, 4))
 b = Matrice.rand_int(1, 5, (4, 4))
 
-print(a.np)
 
 
 print('============================================Tests=============================================')
